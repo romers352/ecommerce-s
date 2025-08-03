@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Response to Your Inquiry</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .content h2 {
+            color: #333;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .response-message {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .support-note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .response-icon {
+            text-align: center;
+            font-size: 48px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{companyName}}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="response-icon">💬</div>
+            
+            <h2>Response to Your Inquiry</h2>
+            
+            <p>Hello {{name}},</p>
+            
+            <p>Thank you for contacting {{companyName}}. We appreciate you taking the time to reach out to us, and we're happy to provide you with the following response:</p>
+            
+            <div class="response-message">
+                {{responseMessage}}
+            </div>
+            
+            <div class="support-note">
+                <strong>💡 Need more help?</strong> If you have any additional questions or need further clarification, please don't hesitate to contact us again. We're here to help!
+            </div>
+            
+            <p>We value your feedback and are committed to providing you with the best possible service. Your satisfaction is our priority.</p>
+            
+            <p>Thank you for choosing {{companyName}}!</p>
+            
+            <p>Best regards,<br>
+            Customer Support Team<br>
+            {{companyName}}</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent from {{companyName}} Customer Support. If you have any questions, please contact our support team.</p>
+            <p>&copy; 2024 {{companyName}}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

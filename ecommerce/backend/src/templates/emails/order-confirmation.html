@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .content h2 {
+            color: #333;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .order-summary {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .order-number {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+            font-weight: bold;
+        }
+        .total-amount {
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .next-steps {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .success-icon {
+            text-align: center;
+            font-size: 48px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{companyName}}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="success-icon">✅</div>
+            
+            <h2>Order Confirmation</h2>
+            
+            <p>Hello {{customerName}},</p>
+            
+            <p>Thank you for your order! We're excited to confirm that we've received your order and it's being processed.</p>
+            
+            <div class="order-number">
+                <strong>Order Number:</strong> #{{orderNumber}}
+            </div>
+            
+            <div class="order-summary">
+                <h3 style="margin-top: 0; color: #333;">Order Summary</h3>
+                <p><strong>Order Date:</strong> {{orderDate}}</p>
+                <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+                <p><strong>Shipping Address:</strong><br>
+                {{shippingAddress}}</p>
+            </div>
+            
+            <div class="total-amount">
+                Order Total: ${{orderTotal}}
+            </div>
+            
+            <div class="next-steps">
+                <strong>📦 What happens next?</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>We'll prepare your order for shipment</li>
+                    <li>You'll receive a shipping confirmation email with tracking information</li>
+                    <li>Your order will be delivered to the address provided</li>
+                    <li>You can track your order status in your account dashboard</li>
+                </ul>
+            </div>
+            
+            <p><strong>Estimated Delivery:</strong> {{estimatedDelivery}}</p>
+            
+            <p>If you have any questions about your order, please don't hesitate to contact our customer service team. We're here to help!</p>
+            
+            <p>Thank you for choosing {{companyName}}!</p>
+            
+            <p>Best regards,<br>
+            The {{companyName}} Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent from {{companyName}}. If you have any questions, please contact our support team.</p>
+            <p>&copy; 2024 {{companyName}}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

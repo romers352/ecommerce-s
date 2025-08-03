@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Admin Token</title>
+</head>
+<body>
+    <h1>Token Management</h1>
+    <div id="status"></div>
+    <button onclick="checkTokens()">Check Current Tokens</button>
+    <button onclick="clearAdminToken()">Clear Admin Token</button>
+    <button onclick="clearAllTokens()">Clear All Tokens</button>
+    
+    <script>
+        function checkTokens() {
+            const adminToken = localStorage.getItem('adminToken');
+            const userToken = localStorage.getItem('token');
+            const adminUser = localStorage.getItem('adminUser');
+            
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                <h3>Current Tokens:</h3>
+                <p><strong>Admin Token:</strong> ${adminToken ? 'Present (' + adminToken.length + ' chars)' : 'None'}</p>
+                <p><strong>User Token:</strong> ${userToken ? 'Present (' + userToken.length + ' chars)' : 'None'}</p>
+                <p><strong>Admin User:</strong> ${adminUser ? 'Present' : 'None'}</p>
+            `;
+        }
+        
+        function clearAdminToken() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            alert('Admin token cleared!');
+            checkTokens();
+        }
+        
+        function clearAllTokens() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            localStorage.removeItem('token');
+            alert('All tokens cleared!');
+            checkTokens();
+        }
+        
+        // Auto-check on load
+        window.onload = checkTokens;
+    </script>
+</body>
+</html>

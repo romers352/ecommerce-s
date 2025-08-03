@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
+/* Import Tailwind's base styles */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: rgb(79, 70, 229);
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition-property: background-color;
+    transition-duration: 200ms;
+  }
+  
+  .btn-secondary {
+    background-color: rgb(229, 231, 235);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    color: rgb(17, 24, 39);
+    transition-property: color, background-color;
+    transition-duration: 200ms;
+  }
+  
+  .card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    border: 1px solid rgb(229, 231, 235);
+    padding: 1.5rem;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px rgb(99 102 241);
+  }
+  
+  .navbar-brand {
+    font-family: var(--font-brand);
+    font-weight: 500;
+    font-size: 1.25rem;
+    letter-spacing: 0.05em;
+  }
+  
+  .product-title {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 1.125rem;
+    color: rgb(17, 24, 39);
+  }
+  
+  .product-price {
+    font-family: var(--font-brand);
+    font-weight: 500;
+    font-size: 1.25rem;
+    color: rgb(99, 102, 241);
+  }
+  
+  .section-title {
+    font-family: var(--font-brand);
+    font-weight: 300;
+    font-size: 1.875rem;
+    color: rgb(17, 24, 39);
+    letter-spacing: 0.025em;
+    
+    @media (min-width: 768px) {
+      font-size: 2.25rem;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  /* Fix appearance compatibility */
+  .appearance-none {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  /* Fix line-clamp compatibility */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  
+  /* Fix vertical-align with display block elements */
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    /* Remove vertical-align when display is block */
+  }
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+}
+
+/* Toast notifications positioning fix */
+[data-sonner-toaster] {
+  position: fixed !important;
+  z-index: 9999 !important;
+  pointer-events: none;
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+  pointer-events: auto;
+  max-width: 350px !important;
+  word-wrap: break-word;
+}
+
+/* React Hot Toast positioning fix */
+.react-hot-toast {
+  position: fixed !important;
+  z-index: 9999 !important;
+  max-width: 350px !important;
+  word-wrap: break-word;
+}
+
+/* Ensure toasts stay within viewport */
+@media (max-width: 640px) {
+  [data-sonner-toaster],
+  .react-hot-toast {
+    left: 10px !important;
+    right: 10px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+  
+  [data-sonner-toaster] [data-sonner-toast],
+  .react-hot-toast > div {
+    max-width: 100% !important;
+  }
+}

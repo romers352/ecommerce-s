@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .content h2 {
+            color: #333;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .welcome-note {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .verification-icon {
+            text-align: center;
+            font-size: 48px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{companyName}}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="verification-icon">✉️</div>
+            
+            <h2>Welcome to {{companyName}}!</h2>
+            
+            <p>Hello {{name}},</p>
+            
+            <p>Thank you for creating an account with {{companyName}}! To complete your registration and start enjoying our services, please verify your email address by clicking the button below:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{verificationUrl}}" class="button">Verify My Email</a>
+            </div>
+            
+            <div class="welcome-note">
+                <strong>🎉 What's next?</strong> Once your email is verified, you'll be able to:
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Browse our complete product catalog</li>
+                    <li>Add items to your cart and wishlist</li>
+                    <li>Place orders and track deliveries</li>
+                    <li>Receive exclusive offers and updates</li>
+                </ul>
+            </div>
+            
+            <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
+            <p style="word-break: break-all; color: #666; font-size: 14px;">{{verificationUrl}}</p>
+            
+            <p><strong>Note:</strong> If you didn't create an account with {{companyName}}, please ignore this email.</p>
+            
+            <p>If you have any questions or need assistance, our support team is here to help!</p>
+            
+            <p>Welcome aboard!<br>
+            The {{companyName}} Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent from {{companyName}}. If you have any questions, please contact our support team.</p>
+            <p>&copy; 2024 {{companyName}}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
