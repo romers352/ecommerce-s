@@ -10,6 +10,7 @@ import {
   requestPasswordReset,
   resetPassword,
   verifyEmail,
+  resendEmailVerification,
   checkEmail,
 } from '../controllers/authController';
 import {
@@ -43,8 +44,9 @@ router.post('/check-email', checkEmail);
 router.post('/password-reset/request', passwordResetLimiter, validatePasswordResetRequest, requestPasswordReset);
 router.post('/password-reset/confirm', passwordResetLimiter, validatePasswordReset, resetPassword);
 
-// Email verification
-router.get('/verify-email/:token', verifyEmail);
+// Email verification with OTP
+router.post('/verify-email', authLimiter, verifyEmail);
+router.post('/resend-verification', authLimiter, resendEmailVerification);
 
 // Protected routes
 router.get('/profile', authenticate, getProfile);

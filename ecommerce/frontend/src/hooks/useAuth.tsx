@@ -104,18 +104,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       
+      console.log('[useAuth] Attempting registration for:', userData.email);
       const response = await api.post('/auth/register', userData);
-      const { user, tokens } = response.data.data;
       
-      localStorage.setItem('token', tokens.accessToken);
-      
-      setAuthState({
-        user,
-        token: tokens.accessToken,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      console.log('[useAuth] Registration successful:', response.data.message);
+      // Registration successful but user needs to verify email
+      // Don't set authentication state since user isn't logged in yet
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     } catch (error: unknown) {
+      console.error('[useAuth] Registration failed:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
       const errorMessage = error instanceof Error && 'response' in error && 
         typeof error.response === 'object' && error.response !== null &&

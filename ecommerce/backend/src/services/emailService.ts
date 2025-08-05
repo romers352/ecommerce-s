@@ -31,6 +31,22 @@ class EmailService {
 
   constructor() {
     this.initializeTransporter();
+    // Test connection on startup
+    this.testConnection();
+  }
+
+  private async testConnection(): Promise<void> {
+    try {
+      console.log('🔧 Testing email service connection...');
+      const isConnected = await this.verifyConnection();
+      if (isConnected) {
+        console.log('✅ Email service is ready to send emails');
+      } else {
+        console.log('❌ Email service connection failed - emails will not be sent');
+      }
+    } catch (error) {
+      console.error('❌ Email service test failed:', error);
+    }
   }
 
   private initializeTransporter(): void {
@@ -147,6 +163,30 @@ class EmailService {
           <p>If you didn't create an account, please ignore this email.</p>
         `;
         break;
+      case 'otp-verification':
+        content = `
+          <h2>Email Verification Code</h2>
+          <p>Hello \{\{name\}\},</p>
+          <p>Your verification code is:</p>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #333; font-size: 32px; letter-spacing: 8px; margin: 0;">\{\{otpCode\}\}</h1>
+          </div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't create an account, please ignore this email.</p>
+        `;
+        break;
+      case 'password-reset-otp':
+        content = `
+          <h2>Password Reset Code</h2>
+          <p>Hello \{\{name\}\},</p>
+          <p>You have requested to reset your password. Your reset code is:</p>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #333; font-size: 32px; letter-spacing: 8px; margin: 0;">\{\{otpCode\}\}</h1>
+          </div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+        `;
+        break;
       case 'order-confirmation':
         content = `
           <h2>Order Confirmation</h2>
@@ -188,7 +228,15 @@ class EmailService {
 
   // Send email
   public async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    console.log('📧 Attempting to send email:', {
+      to: options.to,
+      subject: options.subject,
+      template: options.template,
+      isConfigured: this.isConfigured
+    });
+
     if (!this.isConfigured) {
+      console.error('❌ Email service is not configured');
       return {
         success: false,
         error: 'Email service is not configured'
@@ -200,6 +248,7 @@ class EmailService {
       
       // Use template if specified
       if (options.template && options.templateData) {
+        console.log('📄 Loading email template:', options.template);
         html = this.loadTemplate(options.template, {
           ...options.templateData,
           subject: options.subject
@@ -216,6 +265,13 @@ class EmailService {
         attachments: options.attachments
       };
 
+      console.log('📤 Sending email with options:', {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        hasHtml: !!mailOptions.html
+      });
+
       const result = await this.transporter.sendMail(mailOptions);
       
       console.log('✅ Email sent successfully:', {
@@ -229,7 +285,12 @@ class EmailService {
         messageId: result.messageId
       };
     } catch (error: any) {
-      console.error('❌ Failed to send email:', error);
+      console.error('❌ Failed to send email:', {
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response
+      });
       return {
         success: false,
         error: error.message
@@ -260,6 +321,34 @@ class EmailService {
       templateData: {
         name: userName || 'User',
         verificationUrl: verificationUrl,
+        companyName: 'Nurekha E-commerce'
+      }
+    });
+  }
+
+  // Send OTP verification
+  public async sendOTPVerification(email: string, otpCode: string, userName?: string): Promise<EmailResult> {
+    return this.sendEmail({
+      to: email,
+      subject: 'Email Verification Code',
+      template: 'otp-verification',
+      templateData: {
+        name: userName || 'User',
+        otpCode: otpCode,
+        companyName: 'Nurekha E-commerce'
+      }
+    });
+  }
+
+  // Send password reset OTP
+  public async sendPasswordResetOTP(email: string, otpCode: string, userName?: string): Promise<EmailResult> {
+    return this.sendEmail({
+      to: email,
+      subject: 'Password Reset Code',
+      template: 'password-reset-otp',
+      templateData: {
+        name: userName || 'User',
+        otpCode: otpCode,
         companyName: 'Nurekha E-commerce'
       }
     });

@@ -155,18 +155,7 @@ const AdminLogin: React.FC = () => {
           </div>
         </motion.form>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-center text-xs text-gray-500 bg-white p-4 rounded-lg shadow"
-        >
-          <p className="font-semibold text-gray-700 mb-2">Default Admin Credentials:</p>
-          <p><strong>Email:</strong> admin@ecommerce.com</p>
-          <p><strong>Username:</strong> superadmin</p>
-          <p><strong>Password:</strong> SuperAdmin123!</p>
-          <p className="mt-2 text-red-600">⚠️ Please change the password after first login!</p>
-        </motion.div>
+
       </div>
     </div>
   );

@@ -155,8 +155,14 @@ export const authAPI = {
   forgotPassword: (email: string) =>
     api.post('/auth/password-reset/request', { email }),
 
-  resetPassword: (token: string, newPassword: string) =>
-    api.post('/auth/password-reset/confirm', { token, newPassword }),
+  resetPassword: (data: { email: string; otpCode: string; newPassword: string }) =>
+    api.post('/auth/password-reset/confirm', data),
+  
+  verifyEmail: (data: { email: string; otpCode: string }) => 
+    api.post('/auth/verify-email', data),
+  
+  resendVerification: (data: { email: string }) => 
+    api.post('/auth/resend-verification', data),
 };
 
 export const productsAPI = {
@@ -283,7 +289,7 @@ export const adminAPI = {
     return api.put(`/products/${id}`, productData, config);
   },
   
-  deleteProduct: (id: number) => api.delete(`/products/${id}`),
+  deleteProduct: (id: number, force: boolean = true) => api.delete(`/products/${id}${force ? '?force=true' : ''}`),
   
   // Orders
   getAllOrders: (params?: Record<string, unknown>) => api.get('/orders/admin/all', { params }),

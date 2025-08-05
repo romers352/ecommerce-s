@@ -338,8 +338,18 @@ export const getImageUrl = (image: unknown, size?: 'small' | 'medium' | 'large')
   }
   
   // For avatar files that might be just filenames, check if they're in avatars directory
-  if (imagePath.includes('avatar-') || imagePath.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+  if (imagePath.includes('avatar-')) {
     return `${baseUrl}/uploads/avatars/${imagePath}${sizeParam}`;
+  }
+  
+  // For product images from bulk upload, check if they're in products directory
+  if (imagePath.includes('product-') || imagePath.match(/^product-\d+-\d+\.(jpg|jpeg|png|gif|webp)$/i)) {
+    return `${baseUrl}/uploads/products/${imagePath}${sizeParam}`;
+  }
+  
+  // For other image files, check if they're in images directory
+  if (imagePath.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+    return `${baseUrl}/uploads/images/${imagePath}${sizeParam}`;
   }
   
   // Otherwise, assume it's just a filename and prepend /uploads/images/

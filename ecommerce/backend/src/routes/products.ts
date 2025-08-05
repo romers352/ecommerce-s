@@ -37,7 +37,7 @@ import {
   searchLimiter,
   uploadLimiter,
 } from '../middleware/rateLimiter';
-import { uploadProductImages, uploadSingleToMemory } from '../middleware/upload';
+import { uploadProductImages, uploadSingleToMemory, uploadBulkFileToMemory } from '../middleware/upload';
 
 const router = Router();
 
@@ -57,7 +57,7 @@ router.get('/admin/export', authenticateAdmin, generalLimiter, exportProducts);
 router.get('/admin/export-csv', authenticateAdmin, generalLimiter, exportProductsCSV);
 router.get('/admin/export-pdf', authenticateAdmin, generalLimiter, exportProductsPDF);
 router.get('/admin/bulk-template', authenticateAdmin, generalLimiter, downloadBulkTemplate);
-router.post('/admin/bulk-upload', authenticateAdmin, uploadLimiter, uploadSingleToMemory, bulkUploadProducts);
+router.post('/admin/bulk-upload', authenticateAdmin, uploadLimiter, uploadBulkFileToMemory, bulkUploadProducts);
 // router.post('/admin/bulk-upload-csv', authenticateAdmin, uploadLimiter, uploadSingleToMemory, bulkUploadProductsCSV); // Temporarily disabled
 router.post('/', authenticateAdmin, uploadLimiter, uploadProductImages, validateProductCreate, createProduct);
 router.put('/:id', authenticateAdmin, uploadLimiter, uploadProductImages, validateProductUpdate, updateProduct);

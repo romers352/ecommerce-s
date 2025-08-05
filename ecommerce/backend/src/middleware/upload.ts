@@ -64,6 +64,12 @@ const allowedDocumentTypes = {
   'text/plain': '.txt',
 };
 
+const allowedBulkUploadTypes = {
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+  'application/vnd.ms-excel': '.xls',
+  'text/csv': '.csv',
+};
+
 // File filter function
 const createFileFilter = (allowedTypes: Record<string, string>) => {
   return (req: Request, file: MulterFile, cb: multer.FileFilterCallback) => {
@@ -161,6 +167,13 @@ export const uploadToMemory = multer({
 
 // Upload to memory for single image processing
 export const uploadSingleToMemory = uploadToMemory.single('image');
+
+// Bulk upload middleware for Excel/CSV files
+export const uploadBulkFileToMemory = multer({
+  storage: memoryStorage,
+  fileFilter: createFileFilter(allowedBulkUploadTypes),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for bulk upload files
+}).single('file');
 
 // Upload to memory for multiple images
 export const uploadMultipleToMemory = uploadToMemory.array('images', 10);
@@ -348,6 +361,7 @@ export default {
   uploadSiteAssets,
   uploadMultipleFiles,
   uploadSingleToMemory,
+  uploadBulkFileToMemory,
   uploadMultipleToMemory,
   deleteFile,
   deleteFiles,

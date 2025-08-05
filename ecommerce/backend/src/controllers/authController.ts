@@ -21,41 +21,79 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
   // Check if user already exists
   const existingUser = await User.findByEmail(email);
   if (existingUser) {
-    throw new ConflictError('User with this email already exists');
+    // If user exists but email is not verified, allow re-registration
+    if (!existingUser.emailVerified) {
+      // Generate new OTP code and expiry
+      const otpCode = crypto.randomInt(100000, 999999).toString();
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Update existing user with new details and OTP
+      await existingUser.update({
+        firstName,
+        lastName,
+        password,
+        role,
+        otpCode: otpCode,
+        otpExpires: otpExpires,
+      });
+
+      // Send OTP email asynchronously (don't wait for completion)
+  setImmediate(async () => {
+    try {
+      const emailService = (await import('../services/emailService')).default;
+      await emailService.sendOTPVerification(existingUser.email, otpCode, `${existingUser.firstName} ${existingUser.lastName}`);
+      console.log('✅ OTP verification sent successfully');
+    } catch (emailError) {
+      console.error('❌ Failed to send OTP email:', emailError);
+      // Log error but don't fail the registration
+    }
+  });
+
+      const response: ApiResponse<null> = {
+        success: true,
+        message: 'Registration updated! Please check your email for the verification code.',
+        data: null,
+      };
+
+      res.status(200).json(response);
+      return;
+    } else {
+      throw new ConflictError('User with this email already exists and is verified. Please login instead.');
+    }
   }
 
-  // Create new user
+  // Generate OTP code and expiry
+  const otpCode = crypto.randomInt(100000, 999999).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Create new user (not verified by default)
   const user = await User.create({
     firstName,
     lastName,
     email,
     password,
     role,
-    emailVerificationToken: crypto.randomBytes(32).toString('hex'),
-
+    otpCode: otpCode,
+    otpExpires: otpExpires,
+    emailVerified: false,
   });
 
-  // Generate tokens
-  const tokens = generateTokens({ id: user.id, email: user.email, role: user.role });
+  // Send OTP email asynchronously (don't wait for completion)
+  setImmediate(async () => {
+    try {
+      const emailService = (await import('../services/emailService')).default;
+      await emailService.sendOTPVerification(user.email, otpCode, `${user.firstName} ${user.lastName}`);
+      console.log('✅ OTP verification sent successfully');
+    } catch (emailError) {
+      console.error('❌ Failed to send OTP email:', emailError);
+      // Log error but don't fail the registration
+    }
+  });
 
-  // Set auth cookies
-  setAuthCookies(res, tokens);
-
-  // Remove sensitive data from response
-  const userResponse = user.toJSON();
-  delete userResponse.password;
-  delete userResponse.emailVerificationToken;
-  delete userResponse.emailVerificationExpires;
-  delete userResponse.passwordResetToken;
-  delete userResponse.passwordResetExpires;
-
-  const response: ApiResponse<{ user: any; tokens: AuthTokens }> = {
+  const response: ApiResponse<null> = {
     success: true,
-    message: 'User registered successfully',
-    data: {
-      user: userResponse,
-      tokens,
-    },
+    message: 'Registration successful! Please check your email for the verification code.',
+    data: null,
   };
 
   res.status(201).json(response);
@@ -76,6 +114,11 @@ export const login = asyncHandler(async (req: Request, res: Response): Promise<v
   // Check if user is active
   if (!user.isActive) {
     throw new AuthenticationError('Account is deactivated');
+  }
+
+  // Check if email is verified
+  if (!user.emailVerified) {
+    throw new AuthenticationError('Please verify your email address before logging in. Check your inbox for the verification link.');
   }
 
   // Verify password
@@ -266,43 +309,43 @@ export const requestPasswordReset = asyncHandler(async (req: Request, res: Respo
     // Don't reveal if email exists or not
     const response: ApiResponse<null> = {
       success: true,
-      message: 'If the email exists, a password reset link has been sent',
+      message: 'If the email exists, a password reset code has been sent',
       data: null,
     };
     res.json(response);
     return;
   }
 
-  // Generate reset token
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  // Generate 6-digit OTP
+  const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  const resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-  // Save reset token to user
+  // Save reset OTP to user
   await user.update({
-    passwordResetToken: resetToken,
-    passwordResetExpires: resetExpires,
+    passwordResetOtp: resetOtp,
+    passwordResetOtpExpires: resetOtpExpires,
   });
 
-  // Send email with reset link
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-  try {
-    console.log('🔄 Attempting to send password reset email to:', user.email);
-    const emailService = (await import('../services/emailService')).default;
-    const result = await emailService.sendPasswordResetEmail(user.email, resetUrl, `${user.firstName} ${user.lastName}`);
-    console.log('📧 Email service result:', result);
-    if (result.success) {
-      console.log('✅ Password reset email sent successfully');
-    } else {
-      console.error('❌ Email service returned error:', result.error);
+  // Send email with reset OTP asynchronously
+  setImmediate(async () => {
+    try {
+      console.log('🔄 Attempting to send password reset OTP to:', user.email);
+      const emailService = (await import('../services/emailService')).default;
+      const result = await emailService.sendPasswordResetOTP(user.email, resetOtp, `${user.firstName} ${user.lastName}`);
+      console.log('📧 Email service result:', result);
+      if (result.success) {
+        console.log('✅ Password reset OTP sent successfully');
+      } else {
+        console.error('❌ Email service returned error:', result.error);
+      }
+    } catch (emailError) {
+      console.error('❌ Failed to send password reset OTP:', emailError);
     }
-  } catch (emailError) {
-    console.error('❌ Failed to send password reset email:', emailError);
-    // Continue with the response even if email fails
-  }
+  });
 
   const response: ApiResponse<null> = {
     success: true,
-    message: 'Password reset link has been sent to your email',
+    message: 'Password reset code has been sent to your email',
     data: null,
   };
 
@@ -313,27 +356,28 @@ export const requestPasswordReset = asyncHandler(async (req: Request, res: Respo
  * Reset password
  */
 export const resetPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { token, newPassword } = req.body;
+  const { email, otpCode, newPassword } = req.body;
 
-  // Find user by reset token
-  const user = await User.findOne({
+  // Find user by email and reset OTP
+  const user = await (User as any).scope('withTokens').findOne({
     where: {
-      passwordResetToken: token,
-      passwordResetExpires: {
+      email: email.toLowerCase(),
+      passwordResetOtp: otpCode,
+      passwordResetOtpExpires: {
         [require('sequelize').Op.gt]: new Date(),
       },
     },
   });
 
   if (!user) {
-    throw new ValidationError('Invalid or expired reset token');
+    throw new ValidationError('Invalid or expired reset code');
   }
 
-  // Update password and clear reset token
+  // Update password and clear reset OTP
   await user.update({
     password: newPassword,
-    passwordResetToken: undefined,
-    passwordResetExpires: undefined,
+    passwordResetOtp: null,
+    passwordResetOtpExpires: null,
   });
 
   const response: ApiResponse<null> = {
@@ -346,30 +390,31 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response): P
 });
 
 /**
- * Verify email
+ * Verify email with OTP
  */
 export const verifyEmail = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { token } = req.params;
+  const { email, otpCode } = req.body;
 
-  // Find user by verification token
+  // Find user by email and OTP
   const user = await User.findOne({
     where: {
-      emailVerificationToken: token,
-      emailVerificationExpires: {
+      email: email.toLowerCase(),
+      otpCode: otpCode,
+      otpExpires: {
         [require('sequelize').Op.gt]: new Date(),
       },
     },
   });
 
   if (!user) {
-    throw new ValidationError('Invalid or expired verification token');
+    throw new ValidationError('Invalid or expired verification code');
   }
 
   // Mark email as verified
   await user.update({
     emailVerified: true,
-    emailVerificationToken: undefined,
-    emailVerificationExpires: undefined,
+    otpCode: undefined,
+    otpExpires: undefined,
   });
 
   const response: ApiResponse<null> = {
@@ -382,12 +427,12 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response): Pro
 });
 
 /**
- * Resend email verification
+ * Resend email verification OTP
  */
-export const resendEmailVerification = asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const userId = req.user!.id;
+export const resendEmailVerification = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
 
-  const user = await User.findByPk(userId);
+  const user = await User.findByEmail(email);
   if (!user) {
     throw new NotFoundError('User not found');
   }
@@ -396,29 +441,30 @@ export const resendEmailVerification = asyncHandler(async (req: AuthenticatedReq
     throw new ValidationError('Email is already verified');
   }
 
-  // Generate new verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  // Generate new OTP code
+  const otpCode = crypto.randomInt(100000, 999999).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   await user.update({
-    emailVerificationToken: verificationToken,
-    emailVerificationExpires: verificationExpires,
+    otpCode: otpCode,
+    otpExpires: otpExpires,
   });
 
-  // Send verification email
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-  try {
-    const emailService = (await import('../services/emailService')).default;
-    await emailService.sendEmailVerification(user.email, verificationUrl, `${user.firstName} ${user.lastName}`);
-    console.log('✅ Email verification sent successfully');
-  } catch (emailError) {
-    console.error('❌ Failed to send verification email:', emailError);
-    // Continue with the response even if email fails
-  }
+  // Send OTP email asynchronously (don't wait for completion)
+  setImmediate(async () => {
+    try {
+      const emailService = (await import('../services/emailService')).default;
+      await emailService.sendOTPVerification(user.email, otpCode, `${user.firstName} ${user.lastName}`);
+      console.log('✅ OTP verification resent successfully');
+    } catch (emailError) {
+      console.error('❌ Failed to resend OTP email:', emailError);
+      // Log error but don't fail the request
+    }
+  });
 
   const response: ApiResponse<null> = {
     success: true,
-    message: 'Verification email sent successfully',
+    message: 'Verification code sent successfully',
     data: null,
   };
 

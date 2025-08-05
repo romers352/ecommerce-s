@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { adminAPI, productsAPI } from '../../utils/api';
 
 interface Product {
@@ -64,6 +65,8 @@ const AdminProducts: React.FC = () => {
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [bulkResults, setBulkResults] = useState<any>(null);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -220,20 +223,37 @@ const AdminProducts: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await adminAPI.deleteProduct(id);
-        // If we're on the last page and it becomes empty, go to previous page
-        const remainingProducts = products.length - 1;
-        if (remainingProducts === 0 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
-        }
-        fetchProducts();
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to delete product');
+  const handleDelete = (product: Product) => {
+    setProductToDelete(product);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      await adminAPI.deleteProduct(productToDelete.id);
+      // If we're on the last page and it becomes empty, go to previous page
+      const remainingProducts = products.length - 1;
+      if (remainingProducts === 0 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
       }
+      setShowDeleteModal(false);
+       setProductToDelete(null);
+       fetchProducts();
+       // Show success message
+       setError(null);
+       toast.success(`Product "${productToDelete.name}" deleted successfully!`)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete product');
+      setShowDeleteModal(false);
+      setProductToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setProductToDelete(null);
   };
 
   const resetForm = () => {
@@ -623,7 +643,7 @@ const AdminProducts: React.FC = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() => handleDelete(product)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Delete
@@ -1125,23 +1145,61 @@ const AdminProducts: React.FC = () => {
               {/* Upload Results */}
               {bulkResults && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Upload Results:</h4>
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{bulkResults.success}</div>
-                      <div className="text-sm text-gray-600">Successful</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">{bulkResults.failed}</div>
-                      <div className="text-sm text-gray-600">Failed</div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Upload Results:</h4>
+                  
+                  {/* Product Upload Results */}
+                  <div className="mb-4">
+                    <h5 className="text-sm font-medium text-gray-800 mb-2">Products:</h5>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">{bulkResults.success}</div>
+                        <div className="text-sm text-gray-600">Created</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-600">{bulkResults.failed}</div>
+                        <div className="text-sm text-gray-600">Failed</div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Image Download Results */}
+                  {bulkResults.imageDownloads && (
+                    <div className="mb-4">
+                      <h5 className="text-sm font-medium text-gray-800 mb-2">Image Downloads:</h5>
+                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div className="text-center">
+                          <div className="text-xl font-bold text-blue-600">{bulkResults.imageDownloads.success}</div>
+                          <div className="text-sm text-gray-600">Downloaded</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xl font-bold text-orange-600">{bulkResults.imageDownloads.failed}</div>
+                          <div className="text-sm text-gray-600">Failed</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Product Errors */}
                   {bulkResults.errors && bulkResults.errors.length > 0 && (
-                    <div>
-                      <h5 className="text-sm font-medium text-red-900 mb-2">Errors:</h5>
-                      <div className="max-h-32 overflow-y-auto">
+                    <div className="mb-3">
+                      <h5 className="text-sm font-medium text-red-900 mb-2">Product Errors:</h5>
+                      <div className="max-h-24 overflow-y-auto bg-red-50 p-2 rounded">
                         {bulkResults.errors.map((error: string, index: number) => (
                           <p key={index} className="text-sm text-red-800 mb-1">
+                            {error}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Image Download Errors */}
+                  {bulkResults.imageDownloads?.errors && bulkResults.imageDownloads.errors.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium text-orange-900 mb-2">Image Download Errors:</h5>
+                      <div className="max-h-24 overflow-y-auto bg-orange-50 p-2 rounded">
+                        {bulkResults.imageDownloads.errors.map((error: string, index: number) => (
+                          <p key={index} className="text-sm text-orange-800 mb-1">
                             {error}
                           </p>
                         ))}
@@ -1176,6 +1234,43 @@ const AdminProducts: React.FC = () => {
                     {bulkUploading ? 'Uploading...' : 'Upload Products'}
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Product</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
+                </p>
+              </div>
+              <div className="items-center px-4 py-3">
+                <div className="flex space-x-3 justify-center">
+                  <button
+                    onClick={cancelDelete}
+                    className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>

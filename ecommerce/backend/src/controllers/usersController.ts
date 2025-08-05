@@ -657,10 +657,10 @@ export const createUser = asyncHandler(async (req: AuthenticatedRequest, res: Re
   // Remove sensitive data from response
   const userResponse = user.toJSON();
   delete userResponse.password;
-  delete userResponse.emailVerificationToken;
-  delete userResponse.emailVerificationExpires;
-  delete userResponse.passwordResetToken;
-  delete userResponse.passwordResetExpires;
+  delete userResponse.otpCode;
+  delete userResponse.otpExpires;
+  delete userResponse.passwordResetOtp;
+  delete userResponse.passwordResetOtpExpires;
 
   const response: ApiResponse<any> = {
     success: true,

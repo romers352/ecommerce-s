@@ -215,8 +215,7 @@ const Navbar: React.FC = () => {
               </div>
             )}
             <span className="navbar-brand text-white hover:text-blue-300 transition-colors text-sm sm:text-base lg:text-lg">
-              <span className="hidden xs:inline">{siteName}</span>
-              <span className="xs:hidden">{siteName.substring(0, 2).toUpperCase()}</span>
+              {siteName}
             </span>
           </Link>
 

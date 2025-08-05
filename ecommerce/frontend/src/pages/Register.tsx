@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
+import toast from 'react-hot-toast';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -30,6 +32,7 @@ const Register: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -45,9 +48,12 @@ const Register: React.FC = () => {
         password: formData.password,
         confirmPassword: formData.confirmPassword,
       });
-      navigate('/');
+      toast.success('Registration successful! Please check your email for the verification code.');
+      // Redirect to verify email page with email parameter
+      navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
+      toast.error(err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -182,7 +188,11 @@ const Register: React.FC = () => {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 rounded-md p-3">{error}</div>
+          )}
+
+          {success && (
+            <div className="text-green-600 text-sm text-center bg-green-50 border border-green-200 rounded-md p-3">{success}</div>
           )}
 
           <div>

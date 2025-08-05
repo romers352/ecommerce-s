@@ -12,10 +12,10 @@ export interface User {
   role: 'customer' | 'admin';
   isActive: boolean;
   emailVerified: boolean;
-  emailVerificationToken?: string;
-  emailVerificationExpires?: Date;
-  passwordResetToken?: string;
-  passwordResetExpires?: Date;
+  otpCode?: string;
+  otpExpires?: Date;
+  passwordResetOtp?: string;
+  passwordResetOtpExpires?: Date;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;

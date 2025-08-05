@@ -498,18 +498,24 @@ export const updateProduct = asyncHandler(async (req: AuthenticatedRequest, res:
  */
 export const deleteProduct = asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params;
+  const { force } = req.query; // Allow force delete via query parameter
 
   const product = await Product.findByPk(id);
   if (!product) {
     throw new NotFoundError('Product not found');
   }
 
-  // Soft delete by setting isActive to false
-  await product.update({ isActive: false });
+  if (force === 'true') {
+    // Hard delete - permanently remove from database
+    await product.destroy();
+  } else {
+    // Soft delete by setting isActive to false
+    await product.update({ isActive: false });
+  }
 
   const response: ApiResponse<null> = {
     success: true,
-    message: 'Product deleted successfully',
+    message: force === 'true' ? 'Product permanently deleted' : 'Product deleted successfully',
     data: null,
   };
 
@@ -700,8 +706,10 @@ export const getAllProductsAdmin = asyncHandler(async (req: AuthenticatedRequest
     limit = 10,
   } = req.query as any;
 
-  // Build where conditions (no isActive filter for admin)
-  const whereConditions: any = {};
+  // Build where conditions - filter out inactive products by default
+  const whereConditions: any = {
+    isActive: true, // Only show active products by default
+  };
 
   // Search filter
   if (search) {
@@ -717,12 +725,16 @@ export const getAllProductsAdmin = asyncHandler(async (req: AuthenticatedRequest
     whereConditions.categoryId = parseInt(categoryId);
   }
 
-  // Status filter
+  // Status filter - override default active filter if specified
   if (status === 'active') {
     whereConditions.isActive = true;
   } else if (status === 'inactive') {
     whereConditions.isActive = false;
+  } else if (status === 'all') {
+    // Remove the default isActive filter to show all products
+    delete whereConditions.isActive;
   }
+  // If no status specified, keep default (active only)
 
   // Sorting
   let orderConditions: any[] = [];
@@ -982,6 +994,110 @@ export const bulkUploadProductsCSV = asyncHandler(async (req: AuthenticatedReque
   return;
 });
 
+// Helper function to download image from URL
+const downloadImageFromUrl = async (imageUrl: string, filename: string): Promise<string | null> => {
+  try {
+    // Handle base64 data URLs
+    if (imageUrl.startsWith('data:image/')) {
+      const matches = imageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!matches) {
+        throw new Error('Invalid base64 data URL format');
+      }
+      
+      const [, imageType, base64Data] = matches;
+      const extension = imageType === 'jpeg' ? '.jpg' : `.${imageType}`;
+      const uniqueFilename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}${extension}`;
+      const filePath = path.join(process.cwd(), 'uploads', 'products', uniqueFilename);
+      
+      // Convert base64 to buffer and save
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(filePath, buffer);
+      
+      return uniqueFilename;
+    }
+    
+    // Convert Google Drive URLs to direct download format
+    let processedUrl = imageUrl;
+    if (imageUrl.includes('drive.google.com')) {
+      const fileIdMatch = imageUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileIdMatch) {
+        const fileId = fileIdMatch[1];
+        processedUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      } else {
+        throw new Error('Invalid Google Drive URL format');
+      }
+    }
+    
+    // Handle HTTP/HTTPS URLs
+    const https = require('https');
+    const http = require('http');
+    const url = require('url');
+    
+    const parsedUrl = url.parse(processedUrl);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+    
+    return new Promise((resolve, reject) => {
+      const request = protocol.get(processedUrl, (response: any) => {
+        // Handle redirects
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          const redirectUrl = response.headers.location;
+          // Recursively follow the redirect
+          downloadImageFromUrl(redirectUrl, filename)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+        
+        if (response.statusCode !== 200) {
+          reject(new Error(`Failed to download image: ${response.statusCode}`));
+          return;
+        }
+        
+        // Validate content type
+        const contentType = response.headers['content-type'];
+        if (!contentType || !contentType.startsWith('image/')) {
+          reject(new Error('URL does not point to a valid image'));
+          return;
+        }
+        
+        // Generate unique filename with proper extension
+        const extension = contentType.includes('jpeg') ? '.jpg' : 
+                         contentType.includes('png') ? '.png' : 
+                         contentType.includes('gif') ? '.gif' : 
+                         contentType.includes('webp') ? '.webp' : '.jpg';
+        
+        const uniqueFilename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}${extension}`;
+        const filePath = path.join(process.cwd(), 'uploads', 'products', uniqueFilename);
+        
+        const fileStream = fs.createWriteStream(filePath);
+        response.pipe(fileStream);
+        
+        fileStream.on('finish', () => {
+          fileStream.close();
+          resolve(uniqueFilename);
+        });
+        
+        fileStream.on('error', (err: any) => {
+          fs.unlink(filePath, () => {}); // Clean up on error
+          reject(err);
+        });
+      });
+      
+      request.on('error', (err: any) => {
+        reject(err);
+      });
+      
+      request.setTimeout(30000, () => {
+        request.destroy();
+        reject(new Error('Image download timeout'));
+      });
+    });
+  } catch (error) {
+    console.error('Error downloading image:', error);
+    return null;
+  }
+};
+
 // Bulk upload products from Excel
 export const bulkUploadProducts = asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (!req.file) {
@@ -989,8 +1105,8 @@ export const bulkUploadProducts = asyncHandler(async (req: AuthenticatedRequest,
   }
 
   try {
-    // Read the uploaded Excel file
-    const workbook = XLSX.readFile(req.file.path);
+    // Read the uploaded Excel file from buffer (memory storage)
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json(worksheet);
@@ -999,6 +1115,11 @@ export const bulkUploadProducts = asyncHandler(async (req: AuthenticatedRequest,
       success: 0,
       failed: 0,
       errors: [] as string[],
+      imageDownloads: {
+        success: 0,
+        failed: 0,
+        errors: [] as string[]
+      }
     };
 
     // Process each row
@@ -1041,6 +1162,56 @@ export const bulkUploadProducts = asyncHandler(async (req: AuthenticatedRequest,
             .replace(/^-+|-+$/g, '');
         };
 
+        // Process image URLs
+        const productImages: string[] = [];
+        const imageColumns = ['Image URL 1', 'Image URL 2', 'Image URL 3', 'Image URL 4', 'Image URL 5'];
+        
+        for (const column of imageColumns) {
+          if (row[column] && typeof row[column] === 'string' && row[column].trim()) {
+            const imageUrl = row[column].trim();
+            
+            // Validate URL format (HTTP/HTTPS, Google Drive, or base64 data URL)
+            const isValidUrl = () => {
+              // Check for base64 data URL
+              if (imageUrl.startsWith('data:image/')) {
+                return /^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+/]+=*$/.test(imageUrl);
+              }
+              // Check for Google Drive URL
+              if (imageUrl.includes('drive.google.com')) {
+                return /\/d\/[a-zA-Z0-9_-]+/.test(imageUrl);
+              }
+              // Check for HTTP/HTTPS URL
+              try {
+                const url = new URL(imageUrl);
+                return url.protocol === 'http:' || url.protocol === 'https:';
+              } catch {
+                return false;
+              }
+            };
+            
+            if (isValidUrl()) {
+              try {
+                // Download image from URL
+                const downloadedFilename = await downloadImageFromUrl(imageUrl, `${row.SKU}-${productImages.length + 1}`);
+                
+                if (downloadedFilename) {
+                  productImages.push(downloadedFilename);
+                  results.imageDownloads.success++;
+                } else {
+                  results.imageDownloads.failed++;
+                  results.imageDownloads.errors.push(`Row ${i + 2}: Failed to download image from URL`);
+                }
+              } catch (downloadError: any) {
+                results.imageDownloads.failed++;
+                results.imageDownloads.errors.push(`Row ${i + 2}: Error downloading image: ${downloadError.message}`);
+              }
+            } else {
+              results.imageDownloads.failed++;
+              results.imageDownloads.errors.push(`Row ${i + 2}: Invalid image URL format (must be HTTP/HTTPS URL, Google Drive URL, or base64 data URL)`);
+            }
+          }
+        }
+
         // Create product
         await Product.create({
           name: row.Name,
@@ -1060,7 +1231,7 @@ export const bulkUploadProducts = asyncHandler(async (req: AuthenticatedRequest,
           isActive: row['Is Active'] === 'Yes' || row['Is Active'] === true || row['Is Active'] === 1,
           isFeatured: row['Is Featured'] === 'Yes' || row['Is Featured'] === true || row['Is Featured'] === 1,
           isDigital: row['Is Digital'] === 'Yes' || row['Is Digital'] === true || row['Is Digital'] === 1,
-          images: [], // Images need to be uploaded separately
+          images: productImages, // Now includes downloaded images
         });
 
         results.success++;
@@ -1070,21 +1241,14 @@ export const bulkUploadProducts = asyncHandler(async (req: AuthenticatedRequest,
       }
     }
 
-    // Clean up uploaded file
-    fs.unlinkSync(req.file.path);
-
     const response: ApiResponse<typeof results> = {
       success: true,
-      message: `Bulk upload completed. ${results.success} products created, ${results.failed} failed.`,
+      message: `Bulk upload completed. ${results.success} products created, ${results.failed} failed. Images: ${results.imageDownloads.success} downloaded, ${results.imageDownloads.failed} failed.`,
       data: results,
     };
 
     res.status(200).json(response);
   } catch (error: any) {
-    // Clean up uploaded file on error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     throw new ValidationError(`Failed to process Excel file: ${error.message}`);
   }
 });
@@ -1110,6 +1274,11 @@ export const downloadBulkTemplate = asyncHandler(async (req: AuthenticatedReques
       'Is Active': 'Yes',
       'Is Featured': 'No',
       'Is Digital': 'No',
+      'Image URL 1': 'https://example.com/image1.jpg',
+      'Image URL 2': 'https://example.com/image2.png',
+      'Image URL 3': '',
+      'Image URL 4': '',
+      'Image URL 5': '',
     },
     {
       Name: 'Sample Product 2',
@@ -1128,6 +1297,11 @@ export const downloadBulkTemplate = asyncHandler(async (req: AuthenticatedReques
       'Is Active': 'Yes',
       'Is Featured': 'Yes',
       'Is Digital': 'No',
+      'Image URL 1': 'https://example.com/fashion1.webp',
+      'Image URL 2': '',
+      'Image URL 3': '',
+      'Image URL 4': '',
+      'Image URL 5': '',
     },
   ];
 

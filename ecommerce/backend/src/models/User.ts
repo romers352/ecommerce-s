@@ -17,10 +17,10 @@ class User extends Model<UserInterface, UserCreationAttributes> implements UserI
   public role!: 'customer' | 'admin';
   public isActive!: boolean;
   public emailVerified!: boolean;
-  public emailVerificationToken?: string;
-  public emailVerificationExpires?: Date;
-  public passwordResetToken?: string;
-  public passwordResetExpires?: Date;
+  public otpCode?: string;
+  public otpExpires?: Date;
+  public passwordResetOtp?: string;
+  public passwordResetOtpExpires?: Date;
   public lastLogin?: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -36,7 +36,7 @@ class User extends Model<UserInterface, UserCreationAttributes> implements UserI
 
   public toJSON(): Partial<UserInterface> {
     const values = Object.assign({}, this.get());
-    const { password: _password, emailVerificationToken: _emailVerificationToken, passwordResetToken: _passwordResetToken, passwordResetExpires: _passwordResetExpires, ...cleanValues } = values;
+    const { password: _password, otpCode: _otpCode, passwordResetOtp: _passwordResetOtp, passwordResetOtpExpires: _passwordResetOtpExpires, ...cleanValues } = values;
     return cleanValues;
   }
 
@@ -150,19 +150,19 @@ User.init(
       allowNull: false,
       defaultValue: false,
     },
-    emailVerificationToken: {
-      type: DataTypes.STRING(255),
+    otpCode: {
+      type: DataTypes.STRING(6),
       allowNull: true,
     },
-    emailVerificationExpires: {
+    otpExpires: {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    passwordResetToken: {
-      type: DataTypes.STRING(255),
+    passwordResetOtp: {
+      type: DataTypes.STRING(6),
       allowNull: true,
     },
-    passwordResetExpires: {
+    passwordResetOtpExpires: {
       type: DataTypes.DATE,
       allowNull: true,
     },
@@ -219,7 +219,7 @@ User.init(
     },
     defaultScope: {
       attributes: {
-        exclude: ['password', 'emailVerificationToken', 'emailVerificationExpires', 'passwordResetToken', 'passwordResetExpires'],
+        exclude: ['password', 'otpCode', 'otpExpires', 'passwordResetOtp', 'passwordResetOtpExpires'],
       },
     },
     scopes: {
@@ -230,7 +230,7 @@ User.init(
       },
       withTokens: {
         attributes: {
-          include: ['emailVerificationToken', 'emailVerificationExpires', 'passwordResetToken', 'passwordResetExpires'],
+          include: ['otpCode', 'otpExpires', 'passwordResetOtp', 'passwordResetOtpExpires'],
         },
       },
       admins: {
